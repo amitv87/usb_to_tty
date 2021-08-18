@@ -1,0 +1,4 @@
+udevadm control --reload-rules
+udevadm trigger --attr-match=subsystem=net
+
+./usbreset /dev/bus/usb/003/003
