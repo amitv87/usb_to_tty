@@ -1,4 +1,3 @@
-#include <pty.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -7,6 +6,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
+
+#ifdef __linux__
+#include <pty.h>
+#else
+#include <util.h>
+#endif
 
 #include "usb.h"
 
@@ -428,6 +433,7 @@ void intHandler(int signal){
   printf("\r\nexiting on signal %d\n", signal);
 }
 
+extern "C"
 int main(int argc, char *argv[]){
   USB usb;
   poll_fd fds[10];
@@ -444,7 +450,7 @@ int main(int argc, char *argv[]){
   usb.name = "USB";
   pollers = addNode(pollers, &usb);
 
-  usb.ScanDevices();
+  // usb.ScanDevices();
 
   while(keepRunning){
     maxfd = -1;

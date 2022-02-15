@@ -10,20 +10,46 @@ SET(CMAKE_C_FLAGS "-std=gnu11")
 SET(CMAKE_CXX_FLAGS "-std=gnu++11 -fno-rtti -fno-exceptions")
 SET(CMAKE_ASM_FLAGS "")
 
-SET(CMAKE_C_LINK_EXECUTABLE "<CMAKE_C_COMPILER> <OBJECTS> -o <TARGET> -Wl,-Map=<TARGET>.map <LINK_LIBRARIES>")
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_C_LINK_EXECUTABLE}")
-
 project(${APP} C CXX ASM)
 
-SET(LINKER_FLAGS "-lstdc++ -lutil -lusb-1.0 -Wl,-s -Wl,--gc-sections")
-add_compile_options(-Os -g0 -fstrict-aliasing -ffunction-sections -ffreestanding -fexpensive-optimizations -frename-registers -fomit-frame-pointer)
+message("CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME}")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(MACOS_LIBS "-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,Security")
+  SET(PLATFORM_LINKER_FLAGS "-Wl,-dead_strip -Wl,-map,<TARGET>.map ${MACOS_LIBS}")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  SET(PLATFORM_LINKER_FLAGS "-Wl,-s -Wl,--gc-sections -Wl,--as-needed -s -Wl,-Map=<TARGET>.map")
+endif()
 
-FILE(GLOB_RECURSE app_src CONFIGURE_DEPENDS "src/*.c" "src/*.cpp")
+SET(CMAKE_C_LINK_EXECUTABLE "<CMAKE_C_COMPILER> <OBJECTS> -o <TARGET> ${PLATFORM_LINKER_FLAGS} -lstdc++ -lutil <LINK_LIBRARIES>")
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_C_LINK_EXECUTABLE}")
 
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
+add_compile_options(-Os -g0 -ffunction-sections -ffreestanding)
 
-message("LIBUSB_INCLUDE_DIR ${LIBUSB_INCLUDE_DIR}")
+set(DEPS_SRC_DIR $ENV{DEPS_SRC_DIR})
+set(DEPS_BUILD_PATH $ENV{DEPS_BUILD_PATH})
 
-ADD_EXECUTABLE(${APP} ${app_src})
-target_include_directories(${APP} PRIVATE ${LIBUSB_INCLUDE_DIR})
-TARGET_LINK_LIBRARIES(${APP} PRIVATE ${LINKER_FLAGS})
+function(SETVAR NAME VALUE)
+  SET("${NAME}" "${VALUE}" CACHE STRING "" FORCE)
+endfunction()
+
+function(register_lib dep inc lib)
+  string(TOUPPER ${dep} DEP)
+
+  if(NOT DEFINED ARGV3)
+    SET(dir "${dep}")
+  else()
+    SET(dir "${ARGV3}/${dep}")
+  endif()
+
+  SETVAR("${DEP}_DIR" "${DEPS_SRC_DIR}/${dir}")
+  SETVAR("${DEP}_INCLUDES" "${DEPS_SRC_DIR}/${dir}/${inc}")
+  SETVAR("${DEP}_STATIC_LIB" "${DEPS_BUILD_PATH}/${dir}/${lib}")
+endfunction()
+
+register_lib("libusb" "libusb" "libusb/.libs/libusb-1.0.a")
+
+file(GLOB_RECURSE app_src CONFIGURE_DEPENDS "src/*.c" "src/*.cpp")
+
+add_executable(${APP} ${app_src})
+target_include_directories(${APP} PRIVATE ${LIBUSB_INCLUDES})
+target_link_libraries(${APP} PRIVATE ${LIBUSB_STATIC_LIB})

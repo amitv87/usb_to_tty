@@ -10,15 +10,19 @@ BUILD_PATH="$SRC_ROOT_DIR/.build"
 [[ ! -z "${getDevBuildPath}" ]] && eval "$getDevBuildPath" && BUILD_PATH=$(getDevBuildPath);
 
 export DEPS_DIR_NAME=deps
+export DEPS_SRC_DIR=$SRC_ROOT_DIR/$DEPS_DIR_NAME
+
 export DEPS_BUILD_PATH=$BUILD_PATH/$DEPS_DIR_NAME
 
 export TARGET="usb_to_tty"
 
 export NUM_CPU=$(getconf _NPROCESSORS_ONLN)
 
+SILENT_MAKE="-s"
+# VERBOSE_ARGS="-DCMAKE_VERBOSE_MAKEFILE=TRUE"
+
 run(){
   $BUILD_PATH/$TARGET
-  # | TZ=UTC ts '[%F %.T]'
 }
 
 printSize(){
@@ -33,9 +37,8 @@ printSize(){
 build(){
   mkdir -p $BUILD_PATH
   cd $BUILD_PATH
-  [[ ! -f "Makefile" ]] && cmake $PROJECT_PATH
-  # V=1 
-  make -s -j $NUM_CPU $@
+  [[ ! -f "Makefile" ]] && cmake $VERBOSE_ARGS $PROJECT_PATH
+  make $SILENT_MAKE -j $NUM_CPU $@
   cd ~-
 }
 
