@@ -9,9 +9,12 @@ PROJECT_PATH="$SRC_ROOT_DIR"
 BUILD_PATH="$SRC_ROOT_DIR/.build"
 [[ ! -z "${getDevBuildPath}" ]] && eval "$getDevBuildPath" && BUILD_PATH=$(getDevBuildPath);
 
+export DEPS_DIR_NAME=deps
+export DEPS_BUILD_PATH=$BUILD_PATH/$DEPS_DIR_NAME
+
 export TARGET="usb_to_tty"
 
-NUM_CPU=$(getconf _NPROCESSORS_ONLN)
+export NUM_CPU=$(getconf _NPROCESSORS_ONLN)
 
 run(){
   $BUILD_PATH/$TARGET
@@ -57,6 +60,10 @@ elif [[ $ACTION == "b" ]]; then
 elif [[ $ACTION == "br" ]]; then
   compile;
   run;
+elif [[ $ACTION == "i" ]] ; then
+  deps/init.sh
+elif [[ $ACTION == "bd" ]]; then
+  deps/build.sh
 else
   run
 fi
