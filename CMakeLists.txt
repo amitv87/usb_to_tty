@@ -17,10 +17,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(MACOS_LIBS "-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,Security")
   SET(PLATFORM_LINKER_FLAGS "-Wl,-dead_strip -Wl,-map,<TARGET>.map ${MACOS_LIBS}")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  SET(PLATFORM_LINKER_FLAGS "-Wl,-s -Wl,--gc-sections -Wl,--as-needed -s -Wl,-Map=<TARGET>.map")
+  SET(PLATFORM_LINKER_FLAGS "-Wl,-s -lpthread -lutil -ludev -Wl,--gc-sections -Wl,--as-needed -s -Wl,-Map=<TARGET>.map")
 endif()
 
-SET(CMAKE_C_LINK_EXECUTABLE "<CMAKE_C_COMPILER> <OBJECTS> -o <TARGET> ${PLATFORM_LINKER_FLAGS} -lstdc++ -lutil <LINK_LIBRARIES>")
+SET(CMAKE_C_LINK_EXECUTABLE "<CMAKE_C_COMPILER> <OBJECTS> -o <TARGET> -lstdc++ <LINK_LIBRARIES> ${PLATFORM_LINKER_FLAGS}")
 SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_C_LINK_EXECUTABLE}")
 
 add_compile_options(-Os -g0 -ffunction-sections -ffreestanding)
