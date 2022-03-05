@@ -260,9 +260,9 @@ bool USBDevice::Open(){
   rc = libusb_set_auto_detach_kernel_driver(device_handle, 1);
   debug("libusb_set_auto_detach_kernel_driver rc: %d", rc);
 
-  // #ifndef USB_DEBUG
+  #ifndef USB_DEBUG
   return rc == 0;
-  // #endif
+  #endif
 
   libusb_bos_descriptor *bos_desc = NULL;
   if(libusb_get_bos_descriptor(device_handle, &bos_desc) == LIBUSB_SUCCESS){
