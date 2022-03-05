@@ -141,11 +141,11 @@ protected:
       else{
         retry:
         if(prevWritten == written){
-          LOG_PTY("dropping %d bytes...\n", length - written);
+          LOG_PTY("dropping %d bytes...", length - written);
           break;
         }
         if(prevWritten == -1) prevWritten = 0;
-        LOG_PTY("sleeping, written: %d\n", written - prevWritten);
+        LOG_PTY("sleeping, written: %d", written - prevWritten);
         prevWritten = written;
         usleep(2000);
       }
@@ -404,7 +404,7 @@ public:
 };
 
 void OnUSBDevice(USB* usb, libusb_device *dev, bool isOnline, uint16_t vid, uint16_t pid, uint8_t bus, uint8_t addr){
-  printf("OnUSBDevice %s: vid: %04x, pid: %04x, bus: %hhu, addr: %hhu\n", isOnline ? "connected" : "disconnected", vid, pid, bus, addr);
+  printf("OnUSBDevice %s: vid: %04x, pid: %04x, bus: %hhu, addr: %hhu\r\n", isOnline ? "connected" : "disconnected", vid, pid, bus, addr);
 
   if(isOnline){
     for(size_t i = 0; i < countof(kUSBDevices); i++){
@@ -430,7 +430,7 @@ void OnUSBDevice(USB* usb, libusb_device *dev, bool isOnline, uint16_t vid, uint
 static volatile bool keepRunning = true;
 void intHandler(int signal){
   keepRunning = false;
-  printf("\r\nexiting on signal %d\n", signal);
+  printf("\r\nexiting on signal %d\r\n", signal);
 }
 
 extern "C"
@@ -495,7 +495,7 @@ int main(int argc, char *argv[]){
         }
       }
       else if(rc < 0){
-        if(keepRunning) fprintf(stderr, "select() failed (%d|%s)\n", errno, strerror(errno));
+        if(keepRunning) fprintf(stderr, "select() failed (%d|%s)\r\n", errno, strerror(errno));
         keepRunning = false;
       }
     }
