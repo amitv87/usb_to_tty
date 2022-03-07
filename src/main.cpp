@@ -67,7 +67,17 @@ static const USBDeviceInfo kUSBDevices[] = {
 
 static Node* pollers = NULL, *devices = NULL;
 
-#define LOG_PTY(fmt, ...) printf("[%s|%s]" fmt "\r\n", usbDevice->name, info->label, ## __VA_ARGS__)
+#define LOG_PTY(fmt, ...) printf("[%llu|%s|%s]" fmt "\r\n", sys_now(), usbDevice->name, info->label, ## __VA_ARGS__)
+
+static uint64_t start_ms = 0;
+
+static uint64_t sys_now(){
+  struct timespec uptime;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &uptime);
+  uint64_t now = (uptime.tv_sec * 1000) + (uptime.tv_nsec / (1000 * 1000));
+  if(!start_ms) start_ms = now;
+  return now - start_ms;
+}
 
 class PTYInterface : public Poller, public TransferCB{
   char ptyname[64];
