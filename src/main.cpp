@@ -43,6 +43,7 @@ typedef struct{
   const InterfaceInfo* ifaces;
 } USBDeviceInfo;
 
+// #define USE_CSR
 #define USE_BRCM
 // #define USE_INTEL
 
