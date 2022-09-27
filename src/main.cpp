@@ -43,8 +43,8 @@ typedef struct{
   const InterfaceInfo* ifaces;
 } USBDeviceInfo;
 
-// #define USE_CSR
-#define USE_BRCM
+#define USE_CSR
+// #define USE_BRCM
 // #define USE_INTEL
 
 #define USB_DEV_IFACE(_name) _name##_iface
@@ -263,11 +263,36 @@ class HCIInterface : public PTYInterface{
   uint8_t acl_rx_buff[MAX_BLE_HCI_PKT_SIZE + 1];
 
   size_t pty_rx_idx = 0;
-  uint8_t opty_rx_buff[MAX_BLE_HCI_PKT_SIZE + 4];
+  uint8_t opty_rx_buff[1024 + 4];
+
+  size_t rem_acl_bytes = 0, rem_evt_bytes = 0;
 
   void OnComplete(USBTransfer* transfer, uint8_t* data, uint16_t dataLen){
     if(!dataLen) return;
-    data -= 1, dataLen += 1;
+    // data -= 1, dataLen += 1;
+
+    switch(data[-1]){
+      case HCI_ACL:{
+        HCIAcl* pkt = (HCIAcl*)(data);
+        if(rem_acl_bytes == 0){
+          rem_acl_bytes = sizeof(HCIAcl) + pkt->length - dataLen;
+          data -= 1, dataLen += 1;
+        }
+        else rem_acl_bytes -= dataLen;
+        break;
+      }
+      case HCI_EVT:{
+        HCIEvt* pkt = (HCIEvt*)(data);
+        if(rem_evt_bytes == 0){
+          rem_evt_bytes = sizeof(HCIEvt) + pkt->length - dataLen;
+          data -= 1, dataLen += 1;
+        }
+        else rem_evt_bytes -= dataLen;
+        break;
+      }
+      default: return;
+    }
+
     int rc = PTYSend(data, dataLen);
     // hexdump(data, dataLen, "OnComplete");
     // LOG_PTY("got usb hci pkt: %hhu, length: %hu, sent: %hu", data[0], dataLen, rc);
@@ -283,6 +308,13 @@ class HCIInterface : public PTYInterface{
       }                                                               \
     }                                                                 \
   }
+
+  #define min(a,b)             \
+  ({                           \
+      __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+      _a < _b ? _a : _b;       \
+  })
 
   void PTYRecv(uint8_t* data, int length){
     // LOG_PTY("PTYRecv %d bytes", length);
@@ -311,13 +343,21 @@ class HCIInterface : public PTYInterface{
         else goto resetRead;
 
         if(!pktLength) goto readAgain;
-        else if(pktLength > MAX_BLE_HCI_PKT_SIZE) goto resetRead;
+        else if(pktLength > 1024) goto resetRead;
 
         if(pty_rx_idx >= pktLength){
           // hexdump(pty_rx_buff, pktLength, "got pkt");
           // LOG_PTY("got pty hci pkt: %hhu, length: %lu", pkt->type, pktLength);
           if(pkt->type == HCI_CMD) cmd_tx.Submit(pkt->data, pktLength - sizeof(HCIPkt));
-          else if(pkt->type == HCI_ACL) acl_tx.Submit(pkt->data, pktLength - sizeof(HCIPkt));
+          else if(pkt->type == HCI_ACL){
+            size_t sent = 0, pkt_size = pktLength - sizeof(HCIPkt);
+            while(sent < pkt_size){
+              size_t to_send = min(255, pkt_size - sent);
+              bool rc = acl_tx.Submit(pkt->data + sent, to_send);
+              sent += to_send;
+              // LOG_PTY("submit rc: %u, to_send: %zu, sent: %zu, pkt_size: %zu", rc, to_send, sent, pkt_size);
+            }
+          }
           else LOG_PTY("unknown hci pkt");
 
           pty_rx_idx -= pktLength;

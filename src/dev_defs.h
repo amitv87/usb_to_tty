@@ -79,6 +79,13 @@ REG_DEV(ec200u, 0x2c7c, 0x0901,
 )
 */
 
+REG_DEV(air724ug, 0x1782, 0x4e00,
+  REG_CDC_IFACE(eth,  0x01, 0x01, 0x81)
+  REG_CDC_IFACE(cmd1, 0x02, 0x02, 0x83)
+  REG_CDC_IFACE(cmd2, 0x03, 0x03, 0x84)
+  REG_CDC_IFACE(dbg,  0x04, 0x04, 0x85)
+)
+
 #undef REG_DEV
 #undef REG_CDC_IFACE
 #undef REG_HCI_IFACE

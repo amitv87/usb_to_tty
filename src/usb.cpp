@@ -38,6 +38,7 @@ static void printDesc(libusb_device_handle *device_handle, libusb_config_descrip
     printf("              interface[%d]: id = %d\n", i, conf_desc->interface[i].altsetting[0].bInterfaceNumber);
     for(j=0; j<conf_desc->interface[i].num_altsetting; j++){
       printf("interface[%d].altsetting[%d]: num endpoints = %d\n", i, j, conf_desc->interface[i].altsetting[j].bNumEndpoints);
+      printf("interface[%d].altsetting[%d]:    iInterface = %d\n", i, j, conf_desc->interface[i].altsetting[j].iInterface);
       printf("   Class.SubClass.Protocol: %02X.%02X.%02X\n",
         conf_desc->interface[i].altsetting[j].bInterfaceClass,
         conf_desc->interface[i].altsetting[j].bInterfaceSubClass,
@@ -204,6 +205,19 @@ int USB::OnHotPlug(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event
   debug("device %s: bus: %hhu, addr: %hhu, vid: %04x, pid: %04x, bus: %hhu, addr: %hhu",
     event == LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED ? "added" : "removed", bus, addr, dd.idVendor, dd.idProduct, bus, addr);
   // printDev(dev);
+
+  #ifdef USB_DEBUG
+  libusb_config_descriptor* cdesc = NULL;
+  libusb_device_handle* device_handle = NULL;
+  int rc = libusb_open(dev, &device_handle);
+  for(uint8_t i = 0; i < dd.bNumConfigurations; i++){
+    cdesc = NULL;
+    int rc = libusb_get_config_descriptor(dev, i, &cdesc);
+    debug("libusb_get_config_descriptor idx: %hhu, rc: %d", i, rc);
+    if(cdesc) printDesc(device_handle, cdesc), libusb_free_config_descriptor(cdesc);
+  }
+  if(device_handle) libusb_close(device_handle);
+  #endif
 
   if(OnUSBDevice) OnUSBDevice((USB*)user_data, dev, event == LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, dd.idVendor, dd.idProduct, bus, addr);
 
