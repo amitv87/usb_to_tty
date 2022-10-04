@@ -46,6 +46,7 @@ typedef struct{
 #define USE_CSR
 // #define USE_BRCM
 // #define USE_INTEL
+#define USE_TPLINK
 
 #define USB_DEV_IFACE(_name) _name##_iface
 
