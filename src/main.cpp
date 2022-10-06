@@ -44,7 +44,7 @@ typedef struct{
 } USBDeviceInfo;
 
 #define USE_CSR
-// #define USE_BRCM
+#define USE_BRCM
 // #define USE_INTEL
 #define USE_TPLINK
 
@@ -337,9 +337,11 @@ class HCIInterface : public PTYInterface{
         HCIPkt* pkt = (HCIPkt*)(pty_rx_buff);
         size_t pktLength = 0;
 
-        IF_PKT(HCI_CMD, HCICmd, cmd, {})
+        USBTransfer* ep_tx = NULL;
+
+        IF_PKT(HCI_CMD, HCICmd, cmd, {ep_tx = &cmd_tx;})
         ELIF_PKT(HCI_EVT, HCIEvt, evt, {})
-        ELIF_PKT(HCI_ACL, HCIAcl, acl, {})
+        ELIF_PKT(HCI_ACL, HCIAcl, acl, {ep_tx = &acl_tx;})
         ELIF_PKT(HCI_SCO, HCISco, sco, {})
         else goto resetRead;
 
@@ -349,12 +351,12 @@ class HCIInterface : public PTYInterface{
         if(pty_rx_idx >= pktLength){
           // hexdump(pty_rx_buff, pktLength, "got pkt");
           // LOG_PTY("got pty hci pkt: %hhu, length: %lu", pkt->type, pktLength);
-          if(pkt->type == HCI_CMD) cmd_tx.Submit(pkt->data, pktLength - sizeof(HCIPkt));
-          else if(pkt->type == HCI_ACL){
+
+          if(ep_tx){
             size_t sent = 0, pkt_size = pktLength - sizeof(HCIPkt);
             while(sent < pkt_size){
-              size_t to_send = min(255, pkt_size - sent);
-              bool rc = acl_tx.Submit(pkt->data + sent, to_send);
+              size_t to_send = min(ep_tx->maxPktSize, pkt_size - sent);
+              bool rc = ep_tx->Submit(pkt->data + sent, to_send);
               sent += to_send;
               // LOG_PTY("submit rc: %u, to_send: %zu, sent: %zu, pkt_size: %zu", rc, to_send, sent, pkt_size);
             }

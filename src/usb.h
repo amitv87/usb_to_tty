@@ -48,12 +48,12 @@ public:
 };
 
 class USBTransfer{
-  uint16_t maxPktSize = 0;
   USBDevice* device = NULL;
   libusb_transfer* transfer = NULL;
   bool txActive = true;
   int stopFlag = 1;
 public:
+  uint16_t maxPktSize = 0;
   TransferCB* cb = NULL;
   bool DeInit();
   bool Init(TransferCB* cb, USBDevice* device, uint8_t endpoint);
